@@ -52,8 +52,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 
 app.use(cors({
-    origin: "http://localhost:5173",    //  Frontend
-    // origin: "https://crazycar-project.netlify.app",    //  Frontend
+    //origin: "http://localhost:5173",    //  Frontend
+    origin: "https://poetic-madeleine-4d530d.netlify.app",    //  Frontend
     credentials: true
 }));
 app.use(express.json());
