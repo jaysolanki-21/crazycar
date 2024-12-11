@@ -86,8 +86,9 @@ const isAdmin = async (req, res, next) => {
 };
 
 const authenticateToken = (req, res, next) => {
-    const token = req.cookies.token;
-
+    //const token = req.cookies.token;
+    //changed
+    const token = req.cookies.token || req.header('Authorization');
     if (!token) {
         return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
@@ -149,7 +150,7 @@ app.post('/signup', async (req, res) => {
         const newUser = new User({ userName, email, password: hashedPassword });
         await newUser.save();
         const token = jwt.sign({ email: newUser.email }, JWT_SECRET, { expiresIn: '1h' });
-        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production',sameSite: 'Strict' });
 
         res.status(201).json({ success: true, message: 'User registered successfully', token });
     } catch (error) {
@@ -491,6 +492,31 @@ app.get('/cardata', async (req, res) => {
 
 
 // Login route
+// app.post('/login', async (req, res) => {
+//     const { email, password } = req.body;
+
+//     try {
+//         const user = await User.findOne({ email });
+//         if (!user) {
+//             return res.status(400).json({ success: false, message: 'User does not exist' });
+//         }
+
+//         const isMatch = await bcrypt.compare(password, user.password);
+//         if (!isMatch) {
+//             return res.status(400).json({ success: false, message: 'Invalid credentials' });
+//         }
+
+//         const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+
+//         res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+
+//         res.status(200).json({ success: true, message: 'Logged in successfully' });
+//     } catch (error) {
+//         console.error('Error during login:', error);
+//         res.status(500).json({ success: false, message: 'An error occurred during login' });
+//     }
+// });
+
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -500,22 +526,28 @@ app.post('/login', async (req, res) => {
             return res.status(400).json({ success: false, message: 'User does not exist' });
         }
 
+        // Compare password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ success: false, message: 'Invalid credentials' });
         }
 
+        // Generate JWT token
         const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '1h' });
 
-        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        // Set cookie with token
+        res.cookie('token', token, {
+            httpOnly: true,          // Prevent JavaScript access
+            secure: process.env.NODE_ENV === 'production', // Set secure in production (for HTTPS)
+            sameSite: 'Strict',      // Prevent CSRF attacks (adjust to 'Lax' if needed)
+        });
 
-        res.status(200).json({ success: true, message: 'Logged in successfully' });
+        return res.status(200).json({ success: true, message: 'Logged in successfully' });
     } catch (error) {
         console.error('Error during login:', error);
         res.status(500).json({ success: false, message: 'An error occurred during login' });
     }
 });
-
 
 // Logout route
 app.get('/logout', (req, res) => {
